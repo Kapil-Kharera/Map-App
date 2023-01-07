@@ -2,7 +2,6 @@
 'use strict';
 // const map = document.getElementById("map");
 
-
 class Workout {
     date = new Date();
     id = Date.now() + ''.slice(-10);
@@ -81,7 +80,11 @@ class App {
     #workouts = [];
 
     constructor() {
+        //get user position
         this._getPosition();
+
+        //get data from local storage
+        this._getLocalStorage();
 
         //form submit
         form.addEventListener('submit', this._newWorkout.bind(this));
@@ -118,16 +121,21 @@ class App {
 
 
         this.#map.on('click', this._showForm.bind(this));
+
+        //render the marker from local storage data
+        this.#workouts.forEach(work => {
+            this._renderWorkoutMarker(work);
+        });
     }
 
     _showForm(mapE) {
         this.#mapEvent = mapE;
-        // console.log(mapEvent);
 
         form.classList.remove('hidden');
         inputDistance.focus();
     }
 
+    //Hide form + clear input fields
     _hideForm() {
         // Empty the inputs
         inputDistance.value = inputDuration.value = inputCadence.value = inputElevation.value = '';
@@ -157,9 +165,9 @@ class App {
         //     });
         // }
 
-        const allPositive = (...inputs) => {
-            inputs.every(inp => inp > 0);
-        }
+        // const allPositive = (...inputs) => {
+        //     inputs.every(inp => inp > 0);
+        // }
 
         //Get data from form
         const type = inputType.value;
@@ -174,7 +182,6 @@ class App {
             console.log(cadence);
             //check if data is valid
             if (
-                // !validInputs(distance, duration, cadence)
 
                 (
                     !Number.isFinite(distance) ||
@@ -192,14 +199,8 @@ class App {
                 return alert("Inputs have to be positive and numbers");
 
 
-
-
-
             workout = new Runnnig([lat, lng], distance, duration, cadence);
 
-            // this.#workouts.push(workout);
-
-            // if (!Number.isFinite(distance)) return alert("Inputs have to be positive numbers")
         }
 
         // //if workout cylcling, create cycling object
@@ -228,9 +229,6 @@ class App {
 
         // //Add new object to workout array
         this.#workouts.push(workout);
-        console.log(workout);
-
-
 
         //render workout on map as marker
         this._renderWorkoutMarker(workout);
@@ -238,8 +236,11 @@ class App {
         //Render workuot on list
         this._renderWorkout(workout);
 
-        //clear input fields
+        //hide form + clear input fields
        this._hideForm();
+
+       //set local stroage to all workouts
+       this._setLocalStorage();
 
 
     }
@@ -315,12 +316,10 @@ class App {
 
     _moveToPopup(e) {
         const workoutEl = e.target.closest('.workout');
-        console.log(workoutEl);
 
         if (!workoutEl) return;
 
         const workout = this.#workouts.find(work => work.id ===  workoutEl.dataset.id);
-        console.log(workout);
 
         //leaflet library functionality
         this.#map.setView(workout.coords, this.#mapZoomLevel, {
@@ -332,6 +331,27 @@ class App {
 
         //using the public interface
         workout.click();
+    }
+
+    _setLocalStorage() {
+        localStorage.setItem('workout', JSON.stringify(this.#workouts));
+    }
+
+    _getLocalStorage() {
+        const data = JSON.parse(localStorage.getItem('workout'));
+
+        if(!data) return;
+
+        this.#workouts = data;
+
+        this.#workouts.forEach(work => {
+            this._renderWorkout(work);
+        });
+    }
+
+    reset() {
+        localStorage.removeItem('workout');
+        location.reload();
     }
 }
 
